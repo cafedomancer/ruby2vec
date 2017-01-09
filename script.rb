@@ -1,8 +1,6 @@
 require 'pp'
 require 'ripper'
 
-require 'active_support'
-require 'active_support/core_ext'
 require 'byebug'
 require 'linguist'
 require 'tapp'
@@ -54,8 +52,17 @@ BLACKLIST = %i(
   on_words_sep
 )
 
-files = Dir.glob('ruby/**/*').select do |file|
-  File.file?(file)
+root = 'repos'
+
+files = []
+
+Dir.entries(root).each do |repo|
+  next if repo == '.' || repo == '..'
+
+  dirname = File.join(root, repo)
+  files += Dir.glob("#{dirname}/**/*").select do |file|
+    File.file?(file)
+  end
 end
 
 files = files.select do |file|
@@ -80,11 +87,11 @@ lists = lists.map do |list|
 end
 
 lists = lists.map do |list|
-  list.map(&:second).join(' ')
+  list.map { |token| token[1] }.join(' ')
 end
 
 File.open('text', 'wb') do |io|
-  io.puts(lists.reject(&:blank?).join("\n"))
+  io.puts(lists.reject(&:empty?).join("\n"))
 end
 
-system('time ./word2vec/word2vec -train text -output vectors.txt -cbow 1 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 20 -binary 0 -iter 15')
+system('time ./word2vec/word2vec -train text -output vectors.bin -cbow 1 -size 200 -window 8 -negative 25 -hs 0 -sample 1e-4 -threads 20 -binary 1 -iter 15')
